@@ -5,8 +5,8 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // These options are no longer needed in Mongoose 6+
-      // but kept for backwards compatibility if using older versions
+      // Force explicit DB selection to avoid defaulting to "test" on some hosts
+      dbName: process.env.MONGODB_DBNAME || 'mahotsav',
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
