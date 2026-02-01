@@ -139,7 +139,13 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📡 API available at http://localhost:${PORT}`);
+  
+  // Display appropriate URL based on environment
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`📡 API available at https://mahoaccom.onrender.com`);
+  } else {
+    console.log(`📡 API available at http://localhost:${PORT}`);
+  }
 });
 
 module.exports = app;
