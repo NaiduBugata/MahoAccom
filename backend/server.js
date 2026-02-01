@@ -21,7 +21,10 @@ connectDB();
 // 1. CORS - Restrict to specific origin in production
 const allowedOrigins = (process.env.FRONTEND_URL 
   ? process.env.FRONTEND_URL.split(',') 
-  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4173'])
+  : [
+    'https://mahotsav-accommodation.vercel.app',
+    'https://mahoaccom.vercel.app'
+  ])
   .map(o => o.trim().replace(/\/$/, ''));
 
 if (process.env.NODE_ENV === 'production') {
@@ -37,9 +40,10 @@ const corsOptions = {
     if (process.env.ALLOW_ALL_ORIGINS === 'true') return callback(null, true);
 
     const normalized = origin.replace(/\/$/, '');
+    const host = (() => { try { return new URL(normalized).host; } catch { return ''; } })();
     const isAllowed = allowedOrigins.includes(normalized)
       || process.env.NODE_ENV === 'development'
-      || (process.env.ALLOW_VERCEL_PREVIEWS === 'true' && /\.vercel\.app$/i.test(new URL(normalized).host));
+      || /\.vercel\.app$/i.test(host);
 
     if (isAllowed) return callback(null, true);
     if (process.env.NODE_ENV === 'production') {
@@ -48,11 +52,13 @@ const corsOptions = {
     return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  allowedHeaders: ['Content-Type','Authorization','Origin','Accept'],
   credentials: true,
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+// Ensure OPTIONS preflight is handled for all routes
+app.options('*', cors(corsOptions));
 
 // 2. Body parser with size limits to prevent DOS attacks
 app.use(bodyParser.json({ limit: '10kb' }));
