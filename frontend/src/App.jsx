@@ -5,6 +5,7 @@ import AdminPage from './components/AdminPage';
 import './App.css';
 
 function App() {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
   const [user, setUser] = useState(null);
   const [currentPage, setCurrentPage] = useState('main');
 
@@ -18,7 +19,7 @@ function App() {
         const userData = JSON.parse(storedUser);
         
         // Validate token by making a test API call
-        fetch('http://localhost:5000/api/participants/stats', {
+        fetch(`${API_BASE_URL}/participants/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

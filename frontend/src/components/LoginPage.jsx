@@ -4,6 +4,7 @@ import bannerImage from '../assets/spare.png';
 import './LoginPage.css';
 
 const LoginPage = ({ onLogin }) => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ const LoginPage = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
