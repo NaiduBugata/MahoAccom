@@ -24,9 +24,17 @@ const allowedOrigins = (process.env.FRONTEND_URL
   : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4173'])
   .map(o => o.trim().replace(/\/$/, ''));
 
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔐 CORS allowed origins:', allowedOrigins);
+}
+
 const corsOptions = {
   origin: (origin, callback) => {
+    // Allow non-browser requests
     if (!origin) return callback(null, true);
+
+    // Temporary override to allow all origins
+    if (process.env.ALLOW_ALL_ORIGINS === 'true') return callback(null, true);
 
     const normalized = origin.replace(/\/$/, '');
     const isAllowed = allowedOrigins.includes(normalized)
@@ -34,12 +42,15 @@ const corsOptions = {
       || (process.env.ALLOW_VERCEL_PREVIEWS === 'true' && /\.vercel\.app$/i.test(new URL(normalized).host));
 
     if (isAllowed) return callback(null, true);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ CORS blocked origin:', normalized);
+    }
     return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
