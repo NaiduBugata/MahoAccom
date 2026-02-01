@@ -1,7 +1,8 @@
 // TODO: Implement API service for Mahotsav check-in system
 // Reusable API service for communicating with backend using fetch
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
+const API_BASE_URL = RAW_BASE.endsWith('/api') ? RAW_BASE : `${RAW_BASE}/api`;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {

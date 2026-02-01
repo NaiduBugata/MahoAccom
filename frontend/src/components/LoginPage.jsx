@@ -4,7 +4,8 @@ import bannerImage from '../assets/spare.png';
 import './LoginPage.css';
 
 const LoginPage = ({ onLogin }) => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
+  const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'https://mahoaccom.onrender.com/api';
+  const API_BASE_URL = RAW_BASE.endsWith('/api') ? RAW_BASE : `${RAW_BASE}/api`;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
