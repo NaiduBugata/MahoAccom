@@ -12,41 +12,48 @@ async function createInitialUsers() {
     await connectDB();
     console.log('Connected to database');
 
-    // Check if users already exist
-    const existingAdmin = await User.findOne({ role: 'ADMIN' });
-    const existingCoordinator = await User.findOne({ role: 'COORDINATOR' });
+    // Helper to create or update a user deterministically
+    const ensureUser = async ({ username, password, role, name }) => {
+      const uname = String(username).toLowerCase().trim();
+      let user = await User.findOne({ username: uname });
+      if (!user) {
+        user = new User({ username: uname, password, role, name });
+        await user.save();
+        console.log(`✓ ${role} user created`);
+        console.log(`  Username: ${uname}`);
+      } else {
+        // Update password and name if provided
+        user.password = password;
+        if (name) user.name = name;
+        user.role = role;
+        await user.save();
+        console.log(`✓ ${role} user updated`);
+        console.log(`  Username: ${uname}`);
+      }
+    };
 
-    // Create ADMIN user
-    if (!existingAdmin) {
-      const admin = new User({
-        username: 'admin',
-        password: 'admin123', // Change this password!
-        role: 'ADMIN',
-        name: 'Admin User'
-      });
-      await admin.save();
-      console.log('✓ ADMIN user created');
-      console.log('  Username: admin');
-      console.log('  Password: admin123 (CHANGE THIS!)');
-    } else {
-      console.log('! ADMIN user already exists');
-    }
+    // Ensure requested ADMIN user (from user instructions)
+    await ensureUser({
+      username: 'AdminAccomodation',
+      password: 'Accomahotsav2K26',
+      role: 'ADMIN',
+      name: 'Accommodation Admin'
+    });
 
-    // Create COORDINATOR user
-    if (!existingCoordinator) {
-      const coordinator = new User({
-        username: 'coordinator',
-        password: 'coord123', // Change this password!
-        role: 'COORDINATOR',
-        name: 'Coordinator User'
-      });
-      await coordinator.save();
-      console.log('✓ COORDINATOR user created');
-      console.log('  Username: coordinator');
-      console.log('  Password: coord123 (CHANGE THIS!)');
-    } else {
-      console.log('! COORDINATOR user already exists');
-    }
+    // Also ensure baseline accounts (optional)
+    await ensureUser({
+      username: 'admin',
+      password: 'admin123',
+      role: 'ADMIN',
+      name: 'Admin User'
+    });
+
+    await ensureUser({
+      username: 'coordinator',
+      password: 'coord123',
+      role: 'COORDINATOR',
+      name: 'Coordinator User'
+    });
 
     console.log('\n✅ Initial users setup complete!');
     console.log('\n⚠️  IMPORTANT: Change the default passwords before using in production!');
