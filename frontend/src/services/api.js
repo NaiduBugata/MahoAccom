@@ -1,7 +1,7 @@
 // TODO: Implement API service for Mahotsav check-in system
 // Reusable API service for communicating with backend using fetch
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
