@@ -74,10 +74,14 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
           setContactNumber(phoneNumber);
         }
         
-        // Set the luncheon ID as the MHID if not already provided
-        if (!mhid && externalData.id) {
-          const idWithoutPrefix = externalData.id.replace(/MH26/, '');
-          setMhid(idWithoutPrefix);
+        // Set the external userId/MHID as the MHID (6 digits) if not provided
+        if (!mhid) {
+          const externalMHID = externalData.userId || externalData.mhid || externalData.id || '';
+          if (externalMHID) {
+            const idWithoutPrefix = String(externalMHID).replace(/^MH26/, '');
+            const sixDigits = idWithoutPrefix.replace(/\D/g, '').slice(-6);
+            if (sixDigits) setMhid(sixDigits);
+          }
         }
         
         showMessage('✓ Data found and auto-filled! Please verify and proceed.', 'success');

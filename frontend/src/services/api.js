@@ -132,31 +132,51 @@ export const updateParticipant = async (mhid, updates) => {
  * @returns {Promise} - Response with participant details
  */
 export const searchExternalMHID = async (query) => {
-  try {
-    const response = await fetch(`https://mhid.onrender.com/api/search?query=${encodeURIComponent(query)}`);
-    
-    if (!response.ok) {
-      return {
-        success: false,
-        message: 'ID not found in external database',
-        data: null
-      };
-    }
+  const endpoints = [
+    // Try the provided Vercel app first
+    `https://mahotsav-accommodation.vercel.app/api/search?query=${encodeURIComponent(query)}`,
+    // Fallback to the Render endpoint
+    `https://mhid.onrender.com/api/search?query=${encodeURIComponent(query)}`,
+  ];
 
-    const data = await response.json();
-    return {
-      success: true,
-      message: 'Participant details found',
-      data: data
-    };
-  } catch (error) {
-    console.error('Error searching external MHID API:', error);
-    return {
-      success: false,
-      message: 'Error searching external database',
-      data: null
-    };
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+
+      const raw = await response.json();
+
+      // Normalize shapes:
+      // Case A: { success, count, data: [ {...} ] }
+      // Case B: { success, data: { ... } }
+      let item = null;
+      if (raw && Array.isArray(raw.data) && raw.data.length > 0) {
+        item = raw.data[0];
+      } else if (raw && raw.data && typeof raw.data === 'object') {
+        item = raw.data;
+      } else if (raw && raw.success && raw.result) {
+        item = raw.result;
+      }
+
+      if (!item) continue;
+
+      // Return normalized structure without mutating values
+      return {
+        success: true,
+        message: 'Participant details found',
+        data: item,
+      };
+    } catch (err) {
+      // Try next endpoint
+      continue;
+    }
   }
+
+  return {
+    success: false,
+    message: 'ID not found in external database',
+    data: null,
+  };
 };
 
 export default {
