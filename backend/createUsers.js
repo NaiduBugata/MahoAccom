@@ -48,6 +48,14 @@ async function createInitialUsers() {
       name: 'Admin User'
     });
 
+    // Ensure requested COORDINATOR user
+    await ensureUser({
+      username: 'AccomCoordinator',
+      password: 'AccomCoord@2026',
+      role: 'COORDINATOR',
+      name: 'Accommodation Coordinator'
+    });
+
     await ensureUser({
       username: 'coordinator',
       password: 'coord123',

@@ -126,10 +126,44 @@ export const updateParticipant = async (mhid, updates) => {
   }
 };
 
+/**
+ * Search for participant details from external MHID API
+ * @param {string} query - The MHID or luncheon ID to search for
+ * @returns {Promise} - Response with participant details
+ */
+export const searchExternalMHID = async (query) => {
+  try {
+    const response = await fetch(`https://mhid.onrender.com/api/search?query=${encodeURIComponent(query)}`);
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: 'ID not found in external database',
+        data: null
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      message: 'Participant details found',
+      data: data
+    };
+  } catch (error) {
+    console.error('Error searching external MHID API:', error);
+    return {
+      success: false,
+      message: 'Error searching external database',
+      data: null
+    };
+  }
+};
+
 export default {
   checkMHID,
   createParticipant,
   updatePayment,
   allocateRoom,
   updateParticipant,
+  searchExternalMHID,
 };

@@ -3,13 +3,14 @@
 // DOMAIN RULES: MHID is NOT generated - only CHECK and STORE
 
 import { useState, useEffect } from 'react';
-import { checkMHID, createParticipant, updatePayment, allocateRoom } from '../services/api';
+import { checkMHID, createParticipant, updatePayment, allocateRoom, searchExternalMHID } from '../services/api';
 import { getAvailableRoomsByGender } from '../services/roomApi';
 import './CheckInForm.css';
 
 const CheckInForm = ({ onNavigateToAdmin }) => {
   // Form state
   const [mhid, setMhid] = useState('');
+  const [luneenerId, setLuneenerId] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('Boy');
   const [contactNumber, setContactNumber] = useState('');
@@ -39,6 +40,56 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
 
   const showMessage = (text, type) => {
     setMessage({ text, type });
+  };
+
+  /**
+   * Search for participant by luncheon ID in external API
+   * If found, auto-fill form fields
+   */
+  const handleSearchLuneenerId = async () => {
+    if (!luneenerId.trim()) {
+      showMessage('Please enter a luncheon ID', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await searchExternalMHID(luneenerId);
+      
+      if (response.success && response.data) {
+        // Auto-fill the form with fetched data
+        const externalData = response.data;
+        
+        // Extract name, gender, and contact if available
+        if (externalData.name) {
+          setName(externalData.name);
+        }
+        
+        if (externalData.gender) {
+          setGender(externalData.gender === 'F' || externalData.gender === 'Female' || externalData.gender === 'Girl' ? 'Girl' : 'Boy');
+        }
+        
+        if (externalData.contactNumber || externalData.phone) {
+          const phoneNumber = (externalData.contactNumber || externalData.phone).replace(/\D/g, '').slice(-10);
+          setContactNumber(phoneNumber);
+        }
+        
+        // Set the luncheon ID as the MHID if not already provided
+        if (!mhid && externalData.id) {
+          const idWithoutPrefix = externalData.id.replace(/MH26/, '');
+          setMhid(idWithoutPrefix);
+        }
+        
+        showMessage('✓ Data found and auto-filled! Please verify and proceed.', 'success');
+      } else {
+        showMessage('⚠️ Luncheon ID not found. Please enter details manually.', 'info');
+      }
+    } catch (error) {
+      console.error('Error searching luncheon ID:', error);
+      showMessage('Error searching database. Please enter details manually.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -271,6 +322,7 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
    */
   const handleReset = () => {
     setMhid(''); // Will store only the 6 digits
+    setLuneenerId('');
     setName('');
     setGender('Boy');
     setContactNumber('');
@@ -304,6 +356,41 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
             </div>
             
             <form onSubmit={handleCreateParticipant} className="checkin-form">
+          {/* Luncheon ID Search */}
+          <div className="form-group">
+            <label htmlFor="luneenerId">🔍 Search by Luncheon ID <span className="info-text">(Optional)</span></label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <input
+                type="text"
+                id="luneenerId"
+                value={luneenerId}
+                onChange={(e) => setLuneenerId(e.target.value)}
+                placeholder="e.g., MH26000266"
+                disabled={loading}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={handleSearchLuneenerId}
+                disabled={loading || !luneenerId.trim()}
+                className="btn-check-inline"
+                style={{
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.85rem',
+                  background: '#48bb78',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: loading || !luneenerId.trim() ? 'not-allowed' : 'pointer',
+                  opacity: loading || !luneenerId.trim() ? 0.6 : 1,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {loading ? '...' : 'Search'}
+              </button>
+            </div>
+          </div>
+
           {/* MHID Input */}
           <div className="form-group">
             <label htmlFor="mhid">MHID * <span className="info-text">(Format: MH26 + 6 digits)</span></label>
