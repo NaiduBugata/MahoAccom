@@ -40,6 +40,14 @@ async function createInitialUsers() {
       name: 'Accommodation Admin'
     });
 
+    // Ensure ADMIN: adminuser / accomadminuseR
+    await ensureUser({
+      username: 'adminuser',
+      password: 'accomadminuseR',
+      role: 'ADMIN',
+      name: 'Admin User'
+    });
+
     // Also ensure baseline accounts (optional)
     await ensureUser({
       username: 'admin',
@@ -54,6 +62,14 @@ async function createInitialUsers() {
       password: 'AccomCoord@2026',
       role: 'COORDINATOR',
       name: 'Accommodation Coordinator'
+    });
+
+    // Ensure COORDINATOR: eventuser / eventuseraccoM
+    await ensureUser({
+      username: 'eventuser',
+      password: 'eventuseraccoM',
+      role: 'COORDINATOR',
+      name: 'Event Coordinator'
     });
 
     await ensureUser({

@@ -54,6 +54,40 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
   };
 
   /**
+   * Search via MHID 6 digits (MH26 predefined)
+   * Auto-fill form fields when found
+   */
+  const [luneenerId, setLuneenerId] = useState('');
+  const handleSearchLuneenerId = async () => {
+    const six = luneenerId.trim();
+    if (!/^\d{6}$/.test(six)) {
+      showMessage('Please enter last 6 digits (numbers only)', 'error');
+      return;
+    }
+
+    const fullMHID = 'MH26' + six;
+    setLoading(true);
+    try {
+      const response = await searchExternalMHID(fullMHID);
+      if (response.success && response.data) {
+        const { nameVal, genderVal, phoneVal, sixDigits } = normalizeExternalData(response.data);
+        if (nameVal) setName(nameVal);
+        if (genderVal) setGender(genderVal);
+        if (phoneVal) setContactNumber(phoneVal);
+        if (!mhid && sixDigits) setMhid(sixDigits);
+        showMessage('✓ Data found and auto-filled! Please verify and proceed.', 'success');
+      } else {
+        showMessage('⚠️ MHID not found. Please enter details manually.', 'info');
+      }
+    } catch (error) {
+      console.error('Error searching by MHID:', error);
+      showMessage('Error searching database. Please enter details manually.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Check if MHID exists and fetch participant data
    * DOMAIN RULE: Re-checking the same MHID must always return stored data
    */
@@ -319,6 +353,7 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
    */
   const handleReset = () => {
     setMhid(''); // Will store only the 6 digits
+    setLuneenerId('');
     setName('');
     setGender('Boy');
     setContactNumber('');
@@ -352,7 +387,54 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
             </div>
             
             <form onSubmit={handleCreateParticipant} className="checkin-form">
-          {/* MHID is the single entry point; external fetch happens automatically if not found */}
+          {/* MHID Search Bar (6 digits, MH26 predefined) */}
+          <div className="form-group">
+            <label htmlFor="mhidSearch">🔍 Search by MHID <span className="info-text">(Enter last 6 digits)</span></label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ 
+                padding: '12px 16px', 
+                background: '#e2e8f0', 
+                borderRadius: '8px 0 0 8px',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                color: '#2d3748',
+                border: '2px solid #cbd5e0',
+                borderRight: 'none'
+              }}>MH26</span>
+              <input
+                type="text"
+                id="mhidSearch"
+                value={luneenerId}
+                onChange={(e) => setLuneenerId(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                pattern="\\d{6}"
+                autoComplete="off"
+                placeholder="000484"
+                maxLength="6"
+                disabled={loading}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={handleSearchLuneenerId}
+                disabled={loading || luneenerId.length !== 6}
+                className="btn-check-inline"
+                style={{
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.85rem',
+                  background: '#48bb78',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: loading || luneenerId.length !== 6 ? 'not-allowed' : 'pointer',
+                  opacity: loading || luneenerId.length !== 6 ? 0.6 : 1,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {loading ? '...' : 'Search'}
+              </button>
+            </div>
+          </div>
 
           {/* MHID Input */}
           <div className="form-group">
