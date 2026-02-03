@@ -234,6 +234,43 @@ const AdminPage = ({ onBackToCheckIn }) => {
         <p>Monitor and manage room allocations for Mahotsav event</p>
       </div>
 
+      {/* Export Section - placed prominently */}
+      <div className="section-header" style={{ marginBottom: '1rem' }}>
+        <h2>Export</h2>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ fontWeight: 600 }}>Participants:</label>
+          <select
+            value={exportGender}
+            onChange={(e) => setExportGender(e.target.value)}
+            style={{
+              padding: '0.5rem 0.75rem',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px'
+            }}
+          >
+            <option value="Both">Both</option>
+            <option value="Boy">Boys</option>
+            <option value="Girl">Girls</option>
+          </select>
+          <button
+            onClick={handleExportParticipants}
+            disabled={exporting}
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#3182ce',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: exporting ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              opacity: exporting ? 0.7 : 1
+            }}
+          >
+            {exporting ? 'Exporting...' : 'Export Participants (Excel)'}
+          </button>
+        </div>
+      </div>
+
       {/* Error Message */}
       {error && <div className="error-message">{error}</div>}
 
@@ -281,37 +318,7 @@ const AdminPage = ({ onBackToCheckIn }) => {
               ➕ Add New Room
             </button>
             {/* Export Participants */}
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <select
-                value={exportGender}
-                onChange={(e) => setExportGender(e.target.value)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '8px'
-                }}
-              >
-                <option value="Both">Both</option>
-                <option value="Boy">Boys</option>
-                <option value="Girl">Girls</option>
-              </select>
-              <button
-                onClick={handleExportParticipants}
-                disabled={exporting}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#3182ce',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: exporting ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  opacity: exporting ? 0.7 : 1
-                }}
-              >
-                {exporting ? 'Exporting...' : 'Export Participants (Excel)'}
-              </button>
-            </div>
+            {/* Export controls moved above for visibility */}
           </div>
         </div>
 
