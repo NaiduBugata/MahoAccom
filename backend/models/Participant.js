@@ -46,6 +46,12 @@ const participantSchema = new mongoose.Schema({
     default: ''
   },
   
+  college: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  
   // Payment status - manually updated by admin/volunteer
   paymentStatus: {
     type: String,
@@ -77,6 +83,11 @@ const participantSchema = new mongoose.Schema({
     type: String,
     default: null,
     trim: true
+  },
+  
+  amountPaid: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt

@@ -62,7 +62,7 @@ const checkMHID = async (req, res) => {
  */
 const createParticipant = async (req, res) => {
   try {
-    const { mhid, name, gender, contactNumber, email } = req.body;
+    const { mhid, name, gender, contactNumber, email, college } = req.body;
 
     // Validate required fields
     if (!mhid || !name || !gender || !contactNumber) {
@@ -101,6 +101,7 @@ const createParticipant = async (req, res) => {
       gender: gender,
       contactNumber: contactNumber.trim(),
       email: email ? email.trim() : '',
+      college: college ? college.trim() : '',
       paymentStatus: 'Unpaid',
       allocationStatus: 'Not Allocated',
       roomNumber: null,
@@ -366,7 +367,7 @@ const allocateRoom = async (req, res) => {
 const updateParticipant = async (req, res) => {
   try {
     const { mhid } = req.params;
-    const { name, contactNumber, paymentStatus, gender } = req.body;
+    const { name, contactNumber, paymentStatus, gender, email, college } = req.body;
 
     // Validate MHID
     if (!mhid) {
@@ -453,6 +454,22 @@ const updateParticipant = async (req, res) => {
       }
       
       updates.gender = gender;
+    }
+
+    if (email !== undefined) {
+      const trimmedEmail = (email || '').trim().toLowerCase();
+      // Basic email format check (optional)
+      if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid email format'
+        });
+      }
+      updates.email = trimmedEmail;
+    }
+
+    if (college !== undefined) {
+      updates.college = (college || '').trim();
     }
 
     // Update participant
