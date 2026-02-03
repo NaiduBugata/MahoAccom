@@ -187,3 +187,40 @@ export default {
   updateParticipant,
   searchExternalMHID,
 };
+
+/**
+ * Download participants Excel with optional gender filter
+ * @param {('Boy'|'Girl'|'Both')} gender
+ */
+export const exportParticipantsExcel = async (gender = 'Both') => {
+  const token = localStorage.getItem('token');
+  const headers = {
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+  const url = new URL(`${API_BASE_URL}/export/participants`);
+  if (gender && gender !== 'Both') {
+    url.searchParams.set('gender', gender);
+  }
+  const response = await fetch(url.toString(), { method: 'GET', headers });
+  if (!response.ok) {
+    const msg = `Failed to export: ${response.status}`;
+    throw new Error(msg);
+  }
+  const blob = await response.blob();
+  // Try to get filename from headers; fallback
+  const disposition = response.headers.get('Content-Disposition') || '';
+  let filename = `Mahotsav_Participants_${gender || 'All'}.xlsx`;
+  const match = /filename=([^;]+)/.exec(disposition);
+  if (match && match[1]) {
+    filename = match[1].replace(/"/g, '').trim();
+  }
+  // Trigger download
+  const urlObj = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = urlObj;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(urlObj);
+};

@@ -114,7 +114,10 @@ const exportRoomOccupancy = async (req, res) => {
  */
 const exportParticipants = async (req, res) => {
   try {
-    const participants = await Participant.find().sort({ createdAt: -1 });
+    // Optional gender filter: Boy | Girl | Both
+    const gender = (req.query.gender || '').trim();
+    const filter = (gender === 'Boy' || gender === 'Girl') ? { gender } : {};
+    const participants = await Participant.find(filter).sort({ createdAt: -1 });
     
     // Prepare data for Excel
     const data = participants.map(p => ({
@@ -139,8 +142,9 @@ const exportParticipants = async (req, res) => {
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     
     // Send file
+    const suffix = (gender === 'Boy' || gender === 'Girl') ? gender : 'All';
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=Mahotsav_Participants_${Date.now()}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=Mahotsav_Participants_${suffix}_${Date.now()}.xlsx`);
     return res.send(buffer);
   } catch (error) {
     console.error('Error in exportParticipants:', error);

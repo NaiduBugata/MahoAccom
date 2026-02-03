@@ -10,7 +10,6 @@ import './CheckInForm.css';
 const CheckInForm = ({ onNavigateToAdmin }) => {
   // Form state
   const [mhid, setMhid] = useState('');
-  const [luneenerId, setLuneenerId] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('Boy');
   const [contactNumber, setContactNumber] = useState('');
@@ -42,58 +41,16 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
     setMessage({ text, type });
   };
 
-  /**
-   * Search for participant by luncheon ID in external API
-   * If found, auto-fill form fields
-   */
-  const handleSearchLuneenerId = async () => {
-    if (!luneenerId.trim()) {
-      showMessage('Please enter a luncheon ID', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await searchExternalMHID(luneenerId);
-      
-      if (response.success && response.data) {
-        // Auto-fill the form with fetched data
-        const externalData = response.data;
-        
-        // Extract name, gender, and contact if available
-        if (externalData.name) {
-          setName(externalData.name);
-        }
-        
-        if (externalData.gender) {
-          setGender(externalData.gender === 'F' || externalData.gender === 'Female' || externalData.gender === 'Girl' ? 'Girl' : 'Boy');
-        }
-        
-        if (externalData.contactNumber || externalData.phone) {
-          const phoneNumber = (externalData.contactNumber || externalData.phone).replace(/\D/g, '').slice(-10);
-          setContactNumber(phoneNumber);
-        }
-        
-        // Set the external userId/MHID as the MHID (6 digits) if not provided
-        if (!mhid) {
-          const externalMHID = externalData.userId || externalData.mhid || externalData.id || '';
-          if (externalMHID) {
-            const idWithoutPrefix = String(externalMHID).replace(/^MH26/, '');
-            const sixDigits = idWithoutPrefix.replace(/\D/g, '').slice(-6);
-            if (sixDigits) setMhid(sixDigits);
-          }
-        }
-        
-        showMessage('✓ Data found and auto-filled! Please verify and proceed.', 'success');
-      } else {
-        showMessage('⚠️ Luncheon ID not found. Please enter details manually.', 'info');
-      }
-    } catch (error) {
-      console.error('Error searching luncheon ID:', error);
-      showMessage('Error searching database. Please enter details manually.', 'error');
-    } finally {
-      setLoading(false);
-    }
+  // Normalize external data into local fields
+  const normalizeExternalData = (externalData) => {
+    const nameVal = externalData.name || '';
+    const genderRaw = externalData.gender || externalData.sex || '';
+    const genderVal = (genderRaw === 'F' || /female|girl/i.test(String(genderRaw))) ? 'Girl' : 'Boy';
+    const phoneRaw = externalData.contactNumber || externalData.phone || externalData.mobile || '';
+    const phoneVal = String(phoneRaw).replace(/\D/g, '').slice(-10);
+    const extMHID = externalData.userId || externalData.mhid || externalData.id || '';
+    const sixDigits = String(extMHID).replace(/^MH26/, '').replace(/\D/g, '').slice(-6);
+    return { nameVal, genderVal, phoneVal, sixDigits };
   };
 
   /**
@@ -120,10 +77,46 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
         setContactNumber(response.data.contactNumber || '');
         showMessage('Participant found! Data loaded.', 'success');
       } else {
-        // MHID doesn't exist
-        setParticipant(null);
-        setIsExisting(false);
-        showMessage('MHID not found. You can create a new entry.', 'info');
+        // MHID doesn't exist → try external fetch by MHID and auto-store
+        const external = await searchExternalMHID(fullMHID);
+        if (external.success && external.data) {
+          const { nameVal, genderVal, phoneVal } = normalizeExternalData(external.data);
+          // If external returns empty, keep manual fallback
+          const payload = {
+            mhid: fullMHID,
+            name: nameVal || name || 'Unknown',
+            gender: genderVal || gender,
+            contactNumber: phoneVal || contactNumber
+          };
+          // Ensure contact number is 10 digits; if not, leave manual
+          if (!/^\d{10}$/.test(payload.contactNumber)) {
+            setParticipant(null);
+            setIsExisting(false);
+            setName(payload.name);
+            setGender(payload.gender);
+            setContactNumber('');
+            showMessage('External data fetched. Please enter contact number and create participant.', 'info');
+          } else {
+            const createRes = await createParticipant(payload);
+            if (createRes.success) {
+              setParticipant(createRes.data);
+              setIsExisting(true);
+              setName(createRes.data.name);
+              setGender(createRes.data.gender);
+              setContactNumber(createRes.data.contactNumber || '');
+              showMessage('Participant auto-created from MHID lookup.', 'success');
+            } else {
+              setParticipant(null);
+              setIsExisting(false);
+              showMessage(createRes.message || 'Failed to create participant from external data', 'error');
+            }
+          }
+        } else {
+          // Fallback to manual entry
+          setParticipant(null);
+          setIsExisting(false);
+          showMessage('MHID not found. Enter details and create new participant.', 'info');
+        }
       }
     } catch (error) {
       showMessage('Error checking MHID. Please try again.', 'error');
@@ -326,7 +319,6 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
    */
   const handleReset = () => {
     setMhid(''); // Will store only the 6 digits
-    setLuneenerId('');
     setName('');
     setGender('Boy');
     setContactNumber('');
@@ -360,40 +352,7 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
             </div>
             
             <form onSubmit={handleCreateParticipant} className="checkin-form">
-          {/* Luncheon ID Search */}
-          <div className="form-group">
-            <label htmlFor="luneenerId">🔍 Search by Luncheon ID <span className="info-text">(Optional)</span></label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <input
-                type="text"
-                id="luneenerId"
-                value={luneenerId}
-                onChange={(e) => setLuneenerId(e.target.value)}
-                placeholder="e.g., MH26000266"
-                disabled={loading}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={handleSearchLuneenerId}
-                disabled={loading || !luneenerId.trim()}
-                className="btn-check-inline"
-                style={{
-                  padding: '0.4rem 1rem',
-                  fontSize: '0.85rem',
-                  background: '#48bb78',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: loading || !luneenerId.trim() ? 'not-allowed' : 'pointer',
-                  opacity: loading || !luneenerId.trim() ? 0.6 : 1,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {loading ? '...' : 'Search'}
-              </button>
-            </div>
-          </div>
+          {/* MHID is the single entry point; external fetch happens automatically if not found */}
 
           {/* MHID Input */}
           <div className="form-group">
@@ -417,6 +376,9 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
                   const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                   setMhid(value);
                 }}
+                inputMode="numeric"
+                pattern="\\d{6}"
+                autoComplete="off"
                 placeholder="000484"
                 maxLength="6"
                 disabled={loading}
@@ -426,7 +388,7 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
               <button
                 type="button"
                 onClick={handleCheckMHID}
-                disabled={loading || !mhid.trim()}
+                disabled={loading || mhid.length !== 6}
                 className="btn-check-inline"
                 style={{
                   position: 'absolute',
@@ -439,8 +401,8 @@ const CheckInForm = ({ onNavigateToAdmin }) => {
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: loading || !mhid.trim() ? 'not-allowed' : 'pointer',
-                  opacity: loading || !mhid.trim() ? 0.6 : 1
+                  cursor: loading || mhid.length !== 6 ? 'not-allowed' : 'pointer',
+                  opacity: loading || mhid.length !== 6 ? 0.6 : 1
                 }}
               >
                 {loading ? '...' : '🔍 Check'}

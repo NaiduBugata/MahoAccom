@@ -74,31 +74,7 @@ app.use((req, res, next) => {
 });
 
 // 4. Rate limiting for auth endpoints
-const loginAttempts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_ATTEMPTS = 5;
-
-app.use('/api/auth/login', (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
-  
-  if (!loginAttempts.has(ip)) {
-    loginAttempts.set(ip, []);
-  }
-  
-  const attempts = loginAttempts.get(ip).filter(time => now - time < RATE_LIMIT_WINDOW);
-  
-  if (attempts.length >= MAX_ATTEMPTS) {
-    return res.status(429).json({
-      success: false,
-      message: 'Too many login attempts. Please try again later.'
-    });
-  }
-  
-  attempts.push(now);
-  loginAttempts.set(ip, attempts);
-  next();
-});
+// (Rate limiting removed as requested)
 
 // Request logging middleware (development)
 if (process.env.NODE_ENV === 'development') {

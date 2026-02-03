@@ -1,7 +1,7 @@
 // Admin Page - Room Management Dashboard
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getAllRooms, getRoomStats, getRoomParticipants, createRoom, deleteRoom } from '../services/roomApi';
-import { updateParticipant } from '../services/api';
+import { updateParticipant, exportParticipantsExcel } from '../services/api';
 import './AdminPage.css';
 
 const AdminPage = ({ onBackToCheckIn }) => {
@@ -9,11 +9,14 @@ const AdminPage = ({ onBackToCheckIn }) => {
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState('all'); // all, Boy, Girl
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomParticipants, setRoomParticipants] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showAddRoom, setShowAddRoom] = useState(false);
+  const [exportGender, setExportGender] = useState('Both');
+  const [exporting, setExporting] = useState(false);
   
   // Edit participant state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -35,15 +38,15 @@ const AdminPage = ({ onBackToCheckIn }) => {
   });
 
   useEffect(() => {
-    fetchData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    fetchData(false);
+    // Auto-refresh every 30 seconds without blocking the UI
+    const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (silent) setRefreshing(true); else setLoading(true);
       const [roomsResponse, statsResponse] = await Promise.all([
         getAllRooms(),
         getRoomStats()
@@ -62,7 +65,7 @@ const AdminPage = ({ onBackToCheckIn }) => {
       setError('Failed to load data. Please try again.');
       console.error('Error fetching data:', err);
     } finally {
-      setLoading(false);
+      if (silent) setRefreshing(false); else setLoading(false);
     }
   };
 
@@ -138,6 +141,18 @@ const AdminPage = ({ onBackToCheckIn }) => {
     }
   };
 
+  const handleExportParticipants = async () => {
+    try {
+      setExporting(true);
+      await exportParticipantsExcel(exportGender);
+    } catch (err) {
+      alert('Export failed. Please try again.');
+      console.error('Export error:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleEditParticipant = (participant) => {
     setEditingParticipant(participant);
     setEditFormData({
@@ -188,10 +203,10 @@ const AdminPage = ({ onBackToCheckIn }) => {
     });
   };
 
-  const filteredRooms = rooms.filter(room => {
-    if (filter === 'all') return true;
-    return room.gender === filter;
-  });
+  const filteredRooms = useMemo(() => {
+    if (filter === 'all') return rooms;
+    return rooms.filter(room => room.gender === filter);
+  }, [rooms, filter]);
 
   const getCapacityPercentage = (room) => {
     return (room.occupiedCount / room.totalCapacity) * 100;
@@ -227,6 +242,9 @@ const AdminPage = ({ onBackToCheckIn }) => {
         <div className="section-header">
           <h2>Rooms</h2>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {refreshing && (
+              <span style={{ fontSize: '0.9rem', color: '#718096' }}>Refreshing…</span>
+            )}
             <div className="filter-buttons">
               <button
                 className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -262,6 +280,38 @@ const AdminPage = ({ onBackToCheckIn }) => {
             >
               ➕ Add New Room
             </button>
+            {/* Export Participants */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <select
+                value={exportGender}
+                onChange={(e) => setExportGender(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px'
+                }}
+              >
+                <option value="Both">Both</option>
+                <option value="Boy">Boys</option>
+                <option value="Girl">Girls</option>
+              </select>
+              <button
+                onClick={handleExportParticipants}
+                disabled={exporting}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#3182ce',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: exporting ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  opacity: exporting ? 0.7 : 1
+                }}
+              >
+                {exporting ? 'Exporting...' : 'Export Participants (Excel)'}
+              </button>
+            </div>
           </div>
         </div>
 

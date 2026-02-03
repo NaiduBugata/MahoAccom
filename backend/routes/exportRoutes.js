@@ -12,7 +12,7 @@ const {
   exportUnpaidParticipants,
   exportAllocations
 } = require('../controllers/exportController');
-const { authenticate, authorizeAdmin, authorizeCoordinator } = require('../middleware/auth');
+const { authenticate, authorizeAdmin, authorizeCoordinator, authorizeAdminOrCoordinator } = require('../middleware/auth');
 
 /**
  * @route   GET /api/export/rooms
@@ -33,7 +33,8 @@ router.get('/room-occupancy', authenticate, authorizeAdmin, exportRoomOccupancy)
  * @desc    Export all participants to Excel (COORDINATOR)
  * @access  Private (COORDINATOR)
  */
-router.get('/participants', authenticate, authorizeCoordinator, exportParticipants);
+// Allow both Admin and Coordinator to export participants
+router.get('/participants', authenticate, authorizeAdminOrCoordinator, exportParticipants);
 
 /**
  * @route   GET /api/export/paid
