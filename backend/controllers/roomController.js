@@ -99,7 +99,7 @@ const getRoomParticipants = async (req, res) => {
     const participants = await Participant.find({ 
       roomNumber: parseInt(roomNumber),
       allocationStatus: 'Allocated'
-    }).select('mhid name gender paymentStatus allocationStatus createdAt');
+    }).select('mhid name gender contactNumber paymentStatus allocationStatus createdAt');
     
     return res.status(200).json({
       success: true,
