@@ -178,7 +178,7 @@ const AdminPage = ({ onBackToCheckIn }) => {
         if (selectedRoom) {
           const participantsResponse = await getRoomParticipants(selectedRoom.roomNumber);
           if (participantsResponse.success) {
-            setRoomParticipants(participantsResponse.data);
+            setRoomParticipants(participantsResponse.data.participants);
           }
         }
       } else {
